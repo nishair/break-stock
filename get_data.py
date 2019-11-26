@@ -1,7 +1,13 @@
 import yfinance as yf
-import matplotlib.pyplot as plt
 
-data = yf.download('IBM','1999-11-18','2019-11-18')
+def main():
+    data = yf.download('IBM','1999-11-18','2019-11-18')
+    data.sort_values(by='Date')
+    data['Opn_Close_diff'] = data.Open-data.Close
+    data['High_Low_diff'] = data.High-data.Low
+    data.to_excel('IBM.xlsx')
+    data.pct_change()
+    data.to_excel('IBM_Diff.xlsx')
 
-data.Close.plot()
-plt.show()
+if __name__ == '__main__'
+    main()
