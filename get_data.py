@@ -1,4 +1,4 @@
-import yfinance as yf
+
 
 def main():
     data = yf.download('IBM','1999-11-18','2019-11-18')
