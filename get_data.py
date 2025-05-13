@@ -9,5 +9,5 @@ def main():
     data.pct_change()
     data.to_excel('IBM_Diff.xlsx')
 
-if __name__ == '__main__'
+if __name__ == '__main__':
     main()
