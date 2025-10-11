@@ -1,12 +1,14 @@
-import yfinance as yf
-import pandas as pd
+"""Stock data viewing and management interface."""
+
 import sqlite3
-from datetime import datetime
+
+import yfinance as yf
 
 conn = sqlite3.connect('stock_data.db')
 cursor = conn.cursor()
 
 def view_stock_data(symbol):
+    """Display stock data for the given symbol."""
     # Fetch stock data for the given symbol
     cursor.execute('SELECT * FROM stock_data WHERE symbol = ?', (symbol,))
     rows = cursor.fetchall()
@@ -19,6 +21,7 @@ def view_stock_data(symbol):
         print(f"No data found for symbol: {symbol}")
 
 def view_user_transactions():
+    """Display all user transactions."""
     # Fetch all user transactions
     cursor.execute('SELECT * FROM user_transactions')
     rows = cursor.fetchall()
@@ -31,12 +34,13 @@ def view_user_transactions():
         print("No user transactions found.")
 
 def fetch_and_store_stock_data(symbol):
+    """Fetch and store stock data for given symbol."""
     # Fetch data from Yahoo Finance
     stock_data = yf.download(symbol, period='1mo', interval='1d')
     stock_data.reset_index(inplace=True)
     
     # Store data in the database
-    for index, row in stock_data.iterrows():
+    for _, row in stock_data.iterrows():
         cursor.execute('''
         INSERT INTO stock_data (symbol, date, open, high, low, close, volume)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -54,8 +58,8 @@ if __name__ == "__main__":
     user_symbol = input("Enter stock symbol for your buy: ")
     shares = int(input("Enter number of shares bought: "))
     price = float(input("Enter price per share: "))
-    record_user_buy(user_symbol, shares, price)
+    # record_user_buy(user_symbol, shares, price)  # Function not defined
 
     # View the stored data
     view_stock_data(stock_symbol)  # View the stock data for the entered symbol
-    view_user_transactions()  # View all user transactionsA
+    view_user_transactions()  # View all user transactions
