@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
+"""Comprehensive investment advisor with analysis and optimization tools."""
 
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from get_data import StockAnalyzer
 from portfolio_analyzer import PortfolioAnalyzer
-import yfinance as yf
 
 class InvestmentAdvisor:
+    """Investment advisor combining stock analysis and portfolio optimization."""
+
     def __init__(self):
         self.stock_analyzer = StockAnalyzer()
         self.portfolio_analyzer = PortfolioAnalyzer()
 
     def comprehensive_analysis(self):
+        """Main interface for comprehensive investment analysis."""
         print("=" * 60)
         print("      COMPREHENSIVE INVESTMENT ANALYSIS SYSTEM")
         print("=" * 60)
@@ -46,6 +50,7 @@ class InvestmentAdvisor:
                 print("Invalid choice. Please try again.")
 
     def quick_stock_analysis(self):
+        """Perform quick analysis on top performing stocks."""
         print("\n" + "="*50)
         print("QUICK STOCK ANALYSIS - TOP PERFORMERS")
         print("="*50)

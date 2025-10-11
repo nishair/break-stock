@@ -1,7 +1,9 @@
-import pandas as pd
-import yfinance as yf
+"""Stock data management with Robinhood-style interface."""
+
 import sqlite3
 from datetime import datetime
+
+import yfinance as yf
 
 # Connect to SQLite database (or create it if it doesn't exist)
 conn = sqlite3.connect('stock_data.db')
@@ -34,12 +36,13 @@ CREATE TABLE IF NOT EXISTS user_transactions (
 conn.commit()
 
 def fetch_and_store_stock_data(symbol):
+    """Fetch stock data from Yahoo Finance and store in database."""
     # Fetch data from Yahoo Finance
     stock_data = yf.download(symbol, period='1mo', interval='1d')
     stock_data.reset_index(inplace=True)
     
     # Store data in the database
-    for index, row in stock_data.iterrows():
+    for _, row in stock_data.iterrows():
         cursor.execute('''
         INSERT INTO stock_data (symbol, date, open, high, low, close, volume)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -48,6 +51,7 @@ def fetch_and_store_stock_data(symbol):
     conn.commit()
 
 def record_user_buy(symbol, shares, price):
+    """Record user's buy transaction in the database."""
     # Record the user's transaction
     cursor.execute('''
     INSERT INTO user_transactions (symbol, date, shares, price)
@@ -56,6 +60,7 @@ def record_user_buy(symbol, shares, price):
     conn.commit()
 
 def view_stock_data(symbol):
+    """Display stored stock data for given symbol."""
     # Fetch stock data for the given symbol
     cursor.execute('SELECT * FROM stock_data WHERE symbol = ?', (symbol,))
     rows = cursor.fetchall()
@@ -68,6 +73,7 @@ def view_stock_data(symbol):
         print(f"No data found for symbol: {symbol}")
 
 def view_user_transactions():
+    """Display all user transactions from the database."""
     # Fetch all user transactions
     cursor.execute('SELECT * FROM user_transactions')
     rows = cursor.fetchall()
@@ -93,7 +99,8 @@ if __name__ == "__main__":
 
     # View the stored data
     view_stock_data(stock_symbol)  # View the stock data for the entered symbol
-    view_user_transactions()  # View all user transactionsA
+    view_user_transactions()  # View all user transactions
+
 
 # Close the database connection
 conn.close()

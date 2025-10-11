@@ -1,13 +1,16 @@
+"""Stock market analysis engine with technical indicators and recommendations."""
 
-import yfinance as yf
-import pandas as pd
-import numpy as np
 import sqlite3
-from datetime import datetime, timedelta
 import warnings
+from datetime import datetime
+
+import numpy as np
+import yfinance as yf
+
 warnings.filterwarnings('ignore')
 
 class StockAnalyzer:
+    """Stock analysis engine with technical indicators and investment recommendations."""
     def __init__(self):
         self.conn = sqlite3.connect('stock_analysis.db')
         self.cursor = self.conn.cursor()
@@ -34,6 +37,7 @@ class StockAnalyzer:
         self.conn.commit()
 
     def calculate_rsi(self, prices, window=14):
+        """Calculate Relative Strength Index (RSI) for given prices."""
         delta = prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
@@ -42,6 +46,7 @@ class StockAnalyzer:
         return rsi
 
     def calculate_macd(self, prices, fast=12, slow=26, signal=9):
+        """Calculate MACD (Moving Average Convergence Divergence) indicator."""
         ema_fast = prices.ewm(span=fast).mean()
         ema_slow = prices.ewm(span=slow).mean()
         macd = ema_fast - ema_slow
@@ -49,11 +54,13 @@ class StockAnalyzer:
         return macd, signal_line
 
     def calculate_volatility(self, prices, window=20):
+        """Calculate annualized volatility based on price returns."""
         returns = prices.pct_change()
         volatility = returns.rolling(window=window).std() * np.sqrt(252)
         return volatility
 
     def analyze_stock(self, symbol, period='1y'):
+        """Perform comprehensive technical analysis on a stock symbol."""
         stock = yf.Ticker(symbol)
         data = stock.history(period=period)
 
@@ -137,6 +144,7 @@ class StockAnalyzer:
         }
 
     def get_investment_recommendations(self, symbols, investment_amount=10000):
+        """Generate investment recommendations with portfolio allocation."""
         results = []
         for symbol in symbols:
             analysis = self.analyze_stock(symbol)
@@ -173,17 +181,19 @@ class StockAnalyzer:
         return results
 
 def main():
+    """Main function to run stock analysis and investment recommendations."""
     analyzer = StockAnalyzer()
 
     top_stocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'AMD', 'CRM']
 
     print("Analyzing top stocks for investment opportunities...")
-    recommendations = analyzer.get_investment_recommendations(top_stocks)
+    analyzer.get_investment_recommendations(top_stocks)
 
-    user_symbols = input("\nEnter additional stock symbols to analyze (comma-separated, or press Enter to skip): ")
+    user_symbols = input("\nEnter additional stock symbols to analyze "
+                         "(comma-separated, or press Enter to skip): ")
     if user_symbols.strip():
         user_list = [s.strip().upper() for s in user_symbols.split(',')]
-        user_recommendations = analyzer.get_investment_recommendations(user_list)
+        analyzer.get_investment_recommendations(user_list)
 
 if __name__ == '__main__':
     main()

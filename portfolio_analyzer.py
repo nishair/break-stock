@@ -1,10 +1,14 @@
-import yfinance as yf
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+"""Portfolio optimization and fundamental analysis module."""
+
 import sqlite3
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
 
 class PortfolioAnalyzer:
+    """Portfolio analysis with fundamental metrics and optimization."""
     def __init__(self):
         self.conn = sqlite3.connect('portfolio_analysis.db')
         self.cursor = self.conn.cursor()
@@ -25,6 +29,7 @@ class PortfolioAnalyzer:
         self.conn.commit()
 
     def get_fundamental_data(self, symbol):
+        """Retrieve fundamental financial data for a stock symbol."""
         try:
             stock = yf.Ticker(symbol)
             info = stock.info
@@ -42,10 +47,11 @@ class PortfolioAnalyzer:
                 'sector': info.get('sector', 'Unknown')
             }
             return fundamentals
-        except:
+        except Exception:  # pylint: disable=broad-except
             return None
 
     def calculate_fundamental_score(self, fundamentals):
+        """Calculate fundamental analysis score based on financial metrics."""
         if not fundamentals:
             return 0
 
@@ -83,6 +89,7 @@ class PortfolioAnalyzer:
         return score
 
     def calculate_portfolio_metrics(self, symbols, weights=None):
+        """Calculate portfolio risk, return, and diversification metrics."""
         if weights is None:
             weights = [1/len(symbols)] * len(symbols)
 
@@ -102,7 +109,7 @@ class PortfolioAnalyzer:
 
                     fundamentals = self.get_fundamental_data(symbol)
                     fundamentals_data.append(fundamentals)
-            except:
+            except Exception:  # pylint: disable=broad-except
                 continue
 
         if not returns_data:
@@ -121,7 +128,8 @@ class PortfolioAnalyzer:
         sharpe_ratio = expected_return / portfolio_risk if portfolio_risk > 0 else 0
 
         correlation_matrix = returns_df.corr()
-        avg_correlation = correlation_matrix.values[np.triu_indices_from(correlation_matrix.values, k=1)].mean()
+        avg_correlation = correlation_matrix.values[
+            np.triu_indices_from(correlation_matrix.values, k=1)].mean()
         diversification_score = max(0, 1 - avg_correlation)
 
         sectors = set()
@@ -145,7 +153,9 @@ class PortfolioAnalyzer:
             'num_sectors': len(sectors)
         }
 
-    def optimize_portfolio(self, symbols, investment_amount=10000, risk_tolerance='moderate'):
+    def optimize_portfolio(self, symbols, investment_amount=10000,
+                          risk_tolerance='moderate'):
+        """Optimize portfolio allocation based on risk tolerance and metrics."""
         risk_multipliers = {
             'conservative': 0.8,
             'moderate': 1.0,
@@ -176,14 +186,14 @@ class PortfolioAnalyzer:
                     'price': hist['Close'].iloc[-1],
                     'fundamentals': fundamentals
                 })
-            except:
+            except Exception:  # pylint: disable=broad-except
                 continue
 
         stock_scores.sort(key=lambda x: x['score'], reverse=True)
 
         selected_stocks = stock_scores[:8]
 
-        total_score = sum([s['score'] for s in selected_stocks])
+        total_score = sum(s['score'] for s in selected_stocks)
 
         allocations = []
         total_allocated = 0
@@ -205,7 +215,8 @@ class PortfolioAnalyzer:
                 })
                 total_allocated += actual_allocation
 
-        portfolio_composition = ', '.join([f"{a['symbol']}:{a['weight']:.1%}" for a in allocations])
+        portfolio_composition = ', '.join(
+            f"{a['symbol']}:{a['weight']:.1%}" for a in allocations)
 
         symbols_list = [a['symbol'] for a in allocations]
         weights_list = [a['weight'] for a in allocations]
@@ -213,8 +224,9 @@ class PortfolioAnalyzer:
         metrics = self.calculate_portfolio_metrics(symbols_list, weights_list)
 
         self.cursor.execute('''
-        INSERT INTO portfolio_recommendations (date, portfolio_composition, expected_return,
-                                             risk_level, sharpe_ratio, diversification_score)
+        INSERT INTO portfolio_recommendations
+        (date, portfolio_composition, expected_return, risk_level,
+         sharpe_ratio, diversification_score)
         VALUES (?, ?, ?, ?, ?, ?)
         ''', (datetime.now().strftime('%Y-%m-%d'), portfolio_composition,
               metrics['expected_return'] if metrics else 0,
@@ -225,30 +237,36 @@ class PortfolioAnalyzer:
 
         return allocations, total_allocated, metrics
 
-    def print_portfolio_recommendation(self, allocations, total_allocated, metrics, investment_amount):
-        print(f"\n=== OPTIMIZED PORTFOLIO RECOMMENDATION ===")
+    def print_portfolio_recommendation(self, allocations, total_allocated,
+                                      metrics, investment_amount):
+        """Print formatted portfolio recommendation with metrics."""
+        print("\n=== OPTIMIZED PORTFOLIO RECOMMENDATION ===")
         print(f"Investment Amount: ${investment_amount:,}")
         print(f"Total Allocated: ${total_allocated:,.0f}")
         print(f"Cash Reserve: ${investment_amount - total_allocated:,.0f}")
 
         if metrics:
-            print(f"\nPortfolio Metrics:")
+            print("\nPortfolio Metrics:")
             print(f"Expected Annual Return: {metrics['expected_return']*100:.1f}%")
             print(f"Annual Risk (Volatility): {metrics['risk']*100:.1f}%")
             print(f"Sharpe Ratio: {metrics['sharpe_ratio']:.2f}")
             print(f"Diversification Score: {metrics['diversification_score']*100:.1f}%")
             print(f"Sectors Represented: {metrics['num_sectors']}")
 
-        print(f"\nStock Allocations:")
+        print("\nStock Allocations:")
         for i, stock in enumerate(allocations, 1):
             fund = stock['fundamentals']
             print(f"{i}. {stock['symbol']} - ${stock['allocation']:,.0f} ({stock['weight']*100:.1f}%)")
             print(f"   Shares: {stock['shares']} @ ${stock['price']:.2f}")
             if fund:
-                print(f"   P/E: {fund.get('pe_ratio', 'N/A'):.1f} | ROE: {fund.get('roe', 0)*100:.1f}% | Sector: {fund.get('sector', 'N/A')}")
+                pe_ratio = fund.get('pe_ratio', 'N/A')
+                roe = fund.get('roe', 0) * 100 if fund.get('roe') else 'N/A'
+                sector = fund.get('sector', 'N/A')
+                print(f"   P/E: {pe_ratio} | ROE: {roe}% | Sector: {sector}")
             print()
 
 def main():
+    """Main function for portfolio optimization interface."""
     analyzer = PortfolioAnalyzer()
 
     print("=== PORTFOLIO OPTIMIZATION SYSTEM ===")
@@ -257,7 +275,8 @@ def main():
 
     risk_tolerance = input("Risk tolerance (conservative/moderate/aggressive) [moderate]: ").lower() or "moderate"
 
-    custom_stocks = input("Enter stock symbols (comma-separated) or press Enter for default selection: ")
+    custom_stocks = input("Enter stock symbols (comma-separated) or "
+                         "press Enter for default selection: ")
 
     if custom_stocks.strip():
         symbols = [s.strip().upper() for s in custom_stocks.split(',')]
@@ -266,11 +285,15 @@ def main():
                   'JNJ', 'V', 'PG', 'UNH', 'HD', 'MA', 'DIS', 'PYPL', 'NFLX', 'CRM']
 
     print(f"\nOptimizing portfolio with {len(symbols)} stocks...")
-    print("This may take a moment as we analyze fundamentals and technical indicators...")
+    print("This may take a moment as we analyze fundamentals and "
+          "technical indicators...")
 
-    allocations, total_allocated, metrics = analyzer.optimize_portfolio(symbols, investment_amount, risk_tolerance)
+    allocations, total_allocated, metrics = analyzer.optimize_portfolio(
+        symbols, investment_amount, risk_tolerance)
 
-    analyzer.print_portfolio_recommendation(allocations, total_allocated, metrics, investment_amount)
+    analyzer.print_portfolio_recommendation(
+        allocations, total_allocated, metrics, investment_amount)
+
 
 if __name__ == '__main__':
     main()
